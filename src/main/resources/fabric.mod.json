@@ -30,7 +30,7 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.16.10",
-		"minecraft": "{mcdep}",
+		"minecraft": "${mcdep}",
 		"java": ">=17",
 		"fabric-api": "*",
 		"yet_another_config_lib_v3": "*"
