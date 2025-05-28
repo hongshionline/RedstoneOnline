@@ -22,6 +22,8 @@ class Dependencies {
 	val modmenuVersion = property("deps.modmenu_version")
 	val yaclVersion = property("deps.yacl_version")
 	val devauthVersion = property("deps.devauth_version")
+	val mixinconstraintsVersion = property("deps.mixinconstraints_version")
+	val mixinsquaredVersion = property("deps.mixinsquared_version")
 }
 
 class LoaderData {
@@ -33,7 +35,6 @@ class LoaderData {
 class McData {
 	val version = property("mod.mc_version")
 	val dep = property("mod.mc_dep")
-	val targets = property("mod.mc_targets").toString().split(", ")
 }
 
 val mc = McData()
@@ -67,6 +68,8 @@ repositories {
 	maven("https://maven.nucleoid.xyz/") { name = "Nucleoid" } // Placeholder API - required by Mod Menu
 	maven("https://maven.neoforged.net/releases") // NeoForge
 	maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1") // DevAuth
+	maven("https://maven.bawnorton.com/releases") // MixinSquared
+	maven("https://api.modrinth.com/maven") // Modrinth
 }
 
 dependencies {
@@ -84,6 +87,8 @@ dependencies {
 	})
 
 	modRuntimeOnly("me.djtheredstoner:DevAuth-${loader.loader}:${deps.devauthVersion}")
+	include(implementation("com.moulberry:mixinconstraints:${deps.mixinconstraintsVersion}")!!)!!
+	include(implementation(annotationProcessor("com.bawnorton.mixinsquared:mixinsquared-${loader.loader}:${deps.mixinsquaredVersion}")!!)!!)
 
 	if (loader.isFabric) {
 		modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
@@ -156,10 +161,5 @@ if (stonecutter.current.isActive) {
 	}
 }
 
-@Suppress("TYPE_MISMATCH", "UNRESOLVED_REFERENCE")
 fun <T> optionalProp(property: String, block: (String) -> T?): T? =
 	findProperty(property)?.toString()?.takeUnless { it.isBlank() }?.let(block)
-
-fun isPropDefined(property: String): Boolean {
-	return property(property)?.toString()?.isNotBlank() ?: false
-}
