@@ -12,7 +12,7 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
 
 //? if neoforge
-/*@Mod(value = "examplemod", dist = Dist.CLIENT)*/
+/*@Mod(value = "@MODID@", dist = Dist.CLIENT)*/
 public class ExampleMod /*? if fabric {*/ implements ModInitializer /*?}*/ {
     //? if fabric {
     @Override

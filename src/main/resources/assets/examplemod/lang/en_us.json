@@ -1,5 +1,5 @@
 {
-  "examplemod.examplemod": "ExampleMod",
+  "examplemod.examplemod": "@DESC@",
   "examplemod.example": "Example",
   "examplemod.example.description": "Example_description."
 }

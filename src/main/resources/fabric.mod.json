@@ -16,7 +16,7 @@
 	},
 	"license": "${license}",
 	"icon": "assets/${id}/icon.png",
-	"environment": "*",
+	"environment": "client",
 	"entrypoints": {
 		"main": [
 			"dev.microcontrollers.examplemod.ExampleMod"

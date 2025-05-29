@@ -1,6 +1,7 @@
 plugins {
 	id("dev.architectury.loom") version "1.10.+"
 	id("me.modmuss50.mod-publish-plugin") version "0.8.4"
+	id("net.kyori.blossom") version "1.3.2"
 }
 
 class ModData {
@@ -49,6 +50,11 @@ base { archivesName.set(mod.id) }
 
 stonecutter.const("fabric", loader.isFabric)
 stonecutter.const("neoforge", loader.isNeoforge)
+
+blossom {
+	replaceToken("@MODID@", mod.id)
+	replaceToken("@DESC@", mod.description)
+}
 
 loom {
 	silentMojangMappingsLicense()
@@ -125,6 +131,9 @@ dependencies {
 val rangeRegex = Regex(""">=\s*([0-9.]+)(?:\s*<=\s*([0-9.]+))?""")
 val exactVersionRegex = Regex("""^\d+\.\d+(\.\d+)?$""")
 
+val modrinthId = findProperty("publish.modrinth")?.toString()?.takeIf { it.isNotBlank() }
+val curseforgeId = findProperty("publish.curseforge")?.toString()?.takeIf { it.isNotBlank() }
+
 // accessTokens should be placed in the user Gradle gradle.properties file
 // for example, on Windows this would be "C:\Users\{user}\.gradle\gradle.properties"
 // then add:
@@ -140,55 +149,61 @@ publishMods {
 
 	modLoaders.add(loader.loader)
 
-	modrinth {
-		projectId = property("publish.modrinth").toString()
-		accessToken = findProperty("modrinth.token").toString()
+	dryRun = modrinthId == null || curseforgeId == null
 
-		if (rangeRegex.matches(mc.dep)) {
-			val match = rangeRegex.find(mc.dep)!!
-			val minVersion = match.groupValues[1]
-			val maxVersion = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "latest"
+	if (modrinthId != null) {
+		modrinth {
+			projectId = property("publish.modrinth").toString()
+			accessToken = findProperty("modrinth.token").toString()
 
-			minecraftVersionRange {
-				start = minVersion
-				end = maxVersion
+			if (rangeRegex.matches(mc.dep)) {
+				val match = rangeRegex.find(mc.dep)!!
+				val minVersion = match.groupValues[1]
+				val maxVersion = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "latest"
+
+				minecraftVersionRange {
+					start = minVersion
+					end = maxVersion
+				}
+			} else if (exactVersionRegex.matches(mc.dep)) {
+				minecraftVersions.add(mc.dep)
 			}
-		} else if (exactVersionRegex.matches(mc.dep)) {
-			minecraftVersions.add(mc.dep)
-		}
 
-		if (loader.isFabric) {
-			requires("fabric-api")
-			requires("yacl")
-			requires("modmenu")
-		} else if (loader.isNeoforge) {
-			requires("yacl")
+			if (loader.isFabric) {
+				requires("fabric-api")
+				requires("yacl")
+				requires("modmenu")
+			} else if (loader.isNeoforge) {
+				requires("yacl")
+			}
 		}
 	}
 
-	curseforge {
-		projectId = property("publish.curseforge").toString()
-		accessToken = findProperty("curseforge.token").toString()
+	if (curseforgeId != null) {
+		curseforge {
+			projectId = property("publish.curseforge").toString()
+			accessToken = findProperty("curseforge.token").toString()
 
-		if (rangeRegex.matches(mc.dep)) {
-			val match = rangeRegex.find(mc.dep)!!
-			val minVersion = match.groupValues[1]
-			val maxVersion = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "latest"
+			if (rangeRegex.matches(mc.dep)) {
+				val match = rangeRegex.find(mc.dep)!!
+				val minVersion = match.groupValues[1]
+				val maxVersion = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "latest"
 
-			minecraftVersionRange {
-				start = minVersion
-				end = maxVersion
+				minecraftVersionRange {
+					start = minVersion
+					end = maxVersion
+				}
+			} else if (exactVersionRegex.matches(mc.dep)) {
+				minecraftVersions.add(mc.dep)
 			}
-		} else if (exactVersionRegex.matches(mc.dep)) {
-			minecraftVersions.add(mc.dep)
-		}
 
-		if (loader.isFabric) {
-			requires("fabric-api")
-			requires("yacl")
-			optional("modmenu")
-		} else if (loader.isNeoforge) {
-			requires("yacl")
+			if (loader.isFabric) {
+				requires("fabric-api")
+				requires("yacl")
+				optional("modmenu")
+			} else if (loader.isNeoforge) {
+				requires("yacl")
+			}
 		}
 	}
 }

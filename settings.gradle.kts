@@ -7,6 +7,7 @@ pluginManagement {
 		maven("https://maven.architectury.dev")
 		maven("https://maven.kikugie.dev/snapshots")
 		maven("https://maven.kikugie.dev/releases")
+		maven("https://repo.polyfrost.cc/releases")
 	}
 }
 
@@ -36,6 +37,5 @@ stonecutter {
 		vcsVersion = "1.21.5-fabric"
 	}
 }
-
 
 rootProject.name = "ExampleMod"
