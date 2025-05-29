@@ -1,5 +1,6 @@
 plugins {
 	id("dev.architectury.loom") version "1.10.+"
+	id("me.modmuss50.mod-publish-plugin") version "0.8.4"
 }
 
 class ModData {
@@ -34,7 +35,7 @@ class LoaderData {
 
 class McData {
 	val version = property("mod.mc_version")
-	val dep = property("mod.mc_dep")
+	val dep = property("mod.mc_dep").toString()
 }
 
 val mc = McData()
@@ -65,7 +66,7 @@ repositories {
 	maven("https://maven.isxander.dev/releases") // YACL
 	maven("https://thedarkcolour.github.io/KotlinForForge") // Kotlin for Forge - required by YACL
 	maven("https://maven.terraformersmc.com") // Mod Menu
-	maven("https://maven.nucleoid.xyz/") { name = "Nucleoid" } // Placeholder API - required by Mod Menu
+	maven("https://maven.nucleoid.xyz/") // Placeholder API - required by Mod Menu
 	maven("https://maven.neoforged.net/releases") // NeoForge
 	maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1") // DevAuth
 	maven("https://maven.bawnorton.com/releases") // MixinSquared
@@ -98,6 +99,64 @@ dependencies {
 	} else if (loader.isNeoforge) {
 		"neoForge"("net.neoforged:neoforge:${findProperty("deps.neoforge")}")
 		implementation("dev.isxander:yet-another-config-lib:${deps.yaclVersion}+${mc.version}-${loader.loader}") { isTransitive = false }
+	}
+
+}
+
+val versionRange = Regex(""">=([^\s<]+)(?:\s*<=([^\s<]+))?""").find(mc.dep)
+
+val startVersion = versionRange?.groups?.get(1)?.value
+val endVersion = versionRange?.groups?.get(2)?.value ?: "latest"
+
+// accessTokens should be placed in the user Gradle gradle.properties file
+// for example, on Windows this would be "C:\Users\{user}\.gradle\gradle.properties"
+// then add:
+// modrinth.token=
+// curseforge.token=
+publishMods {
+	file = project.tasks.remapJar.get().archiveFile
+
+	displayName = "${mod.name} ${mod.version}"
+	this.version = mod.version.toString()
+	changelog = rootProject.file("CHANGELOG.md").readText()
+	type = STABLE
+
+	modLoaders.add(loader.loader)
+
+	modrinth {
+		projectId = property("publish.modrinth").toString()
+		accessToken = findProperty("modrinth.token").toString()
+
+		minecraftVersionRange {
+			start = startVersion
+			end = endVersion
+		}
+
+		if (loader.isFabric) {
+			requires("fabric-api")
+			requires("yacl")
+			requires("modmenu")
+		} else if (loader.isNeoforge) {
+			requires("yacl")
+		}
+	}
+
+	curseforge {
+		projectId = property("publish.curseforge").toString()
+		accessToken = findProperty("curseforge.token").toString()
+
+		minecraftVersionRange {
+			start = startVersion
+			end = endVersion
+		}
+
+		if (loader.isFabric) {
+			requires("fabric-api")
+			requires("yacl")
+			optional("modmenu")
+		} else if (loader.isNeoforge) {
+			requires("yacl")
+		}
 	}
 }
 
