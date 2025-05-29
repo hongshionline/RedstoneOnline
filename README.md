@@ -72,4 +72,4 @@ This setup uses the same run directory for all versions. See the `loom` block in
 
 ### ModMenu English Description
 
-This setup uses Blossom to string replace the English description to be the one set in `gradle.properties`. You can check all current string replacements in the `blossom` block in `build.gradle.kts`.
+This setup uses processResources to string replace the English description to be the one set in `gradle.properties`. You can change the default translation file in the `processResources` block in `build.gradle.kts`.

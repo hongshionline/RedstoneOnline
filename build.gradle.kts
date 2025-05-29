@@ -53,7 +53,6 @@ stonecutter.const("neoforge", loader.isNeoforge)
 
 blossom {
 	replaceToken("@MODID@", mod.id)
-	replaceToken("@DESC@", mod.description)
 }
 
 loom {
@@ -245,6 +244,11 @@ tasks.processResources {
 	}
 
 	props.forEach(inputs::property)
+
+	filesMatching("**/lang/en_us.json") { // Defaults description to English translation
+		expand(props)
+		filteringCharset = "UTF-8"
+	}
 
 	if (loader.isFabric) {
 		filesMatching("fabric.mod.json") { expand(props) }
