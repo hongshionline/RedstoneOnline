@@ -103,10 +103,8 @@ dependencies {
 
 }
 
-val versionRange = Regex(""">=([^\s<]+)(?:\s*<=([^\s<]+))?""").find(mc.dep)
-
-val startVersion = versionRange?.groups?.get(1)?.value
-val endVersion = versionRange?.groups?.get(2)?.value ?: "latest"
+val rangeRegex = Regex(""">=\s*([0-9.]+)(?:\s*<=\s*([0-9.]+))?""")
+val exactVersionRegex = Regex("""^\d+\.\d+(\.\d+)?$""")
 
 // accessTokens should be placed in the user Gradle gradle.properties file
 // for example, on Windows this would be "C:\Users\{user}\.gradle\gradle.properties"
@@ -127,9 +125,17 @@ publishMods {
 		projectId = property("publish.modrinth").toString()
 		accessToken = findProperty("modrinth.token").toString()
 
-		minecraftVersionRange {
-			start = startVersion
-			end = endVersion
+		if (rangeRegex.matches(mc.dep)) {
+			val match = rangeRegex.find(mc.dep)!!
+			val minVersion = match.groupValues[1]
+			val maxVersion = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "latest"
+
+			minecraftVersionRange {
+				start = minVersion
+				end = maxVersion
+			}
+		} else if (exactVersionRegex.matches(mc.dep)) {
+			minecraftVersions.add(mc.dep)
 		}
 
 		if (loader.isFabric) {
@@ -145,9 +151,17 @@ publishMods {
 		projectId = property("publish.curseforge").toString()
 		accessToken = findProperty("curseforge.token").toString()
 
-		minecraftVersionRange {
-			start = startVersion
-			end = endVersion
+		if (rangeRegex.matches(mc.dep)) {
+			val match = rangeRegex.find(mc.dep)!!
+			val minVersion = match.groupValues[1]
+			val maxVersion = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "latest"
+
+			minecraftVersionRange {
+				start = minVersion
+				end = maxVersion
+			}
+		} else if (exactVersionRegex.matches(mc.dep)) {
+			minecraftVersions.add(mc.dep)
 		}
 
 		if (loader.isFabric) {
