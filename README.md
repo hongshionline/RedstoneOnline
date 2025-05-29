@@ -24,6 +24,10 @@ The supported Minecraft versions and loaders are also stated here.
 
 The `authors` field, as well as the main and modmenu entrypoints.
 
+### In `neoforge.mods.toml`
+
+The `authors` field.
+
 ### File & Folder Names
 
 Remember to rename your files and folders to your group and project name.
