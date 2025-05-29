@@ -55,10 +55,28 @@ loom {
 
 	runConfigs.all {
 		ideConfigGenerated(stonecutter.current.isActive)
-		runDir = "../../run"
+		runDir = "../../run" // This sets the run folder for all mc versions to the same folder. Remove this line if you want individual run folders.
 	}
 
-	runConfigs.remove(runConfigs["server"])
+	runConfigs.remove(runConfigs["server"]) // Removes server run configs
+}
+
+loom.runs {
+	afterEvaluate {
+		val mixinJarFile = configurations.runtimeClasspath.get().incoming.artifactView {
+			componentFilter {
+				it is ModuleComponentIdentifier && it.group == "net.fabricmc" && it.module == "sponge-mixin"
+			}
+		}.files.first()
+
+		configureEach {
+			vmArg("-javaagent:$mixinJarFile") // Mixin Hotswap doesn't work on NeoForge, but doesn't hurt to keep
+			vmArg("-XX:+AllowEnhancedClassRedefinition")
+
+			property("mixin.hotSwap", "true")
+			property("mixin.debug.export", "true") // Puts mixin outputs in run/.mixin.out
+		}
+	}
 }
 
 repositories {
@@ -103,6 +121,7 @@ dependencies {
 
 }
 
+// mc_dep fields must be in the format 'x', '>=x', '>=x <=y'
 val rangeRegex = Regex(""">=\s*([0-9.]+)(?:\s*<=\s*([0-9.]+))?""")
 val exactVersionRegex = Regex("""^\d+\.\d+(\.\d+)?$""")
 
@@ -175,6 +194,7 @@ publishMods {
 }
 
 java {
+	// withSourcesJar() // Uncomment if you want sources
 	val java = if (stonecutter.compare(
 			stonecutter.current.version,
 			"1.20.6"
