@@ -149,7 +149,7 @@ publishMods {
 
 	modLoaders.add(loader.loader)
 
-	dryRun = modrinthId == null || curseforgeId == null
+	dryRun = modrinthId == null && curseforgeId == null
 
 	if (modrinthId != null) {
 		modrinth {
