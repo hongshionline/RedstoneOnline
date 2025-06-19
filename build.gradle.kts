@@ -51,6 +51,8 @@ base { archivesName.set(mod.id) }
 stonecutter.const("fabric", loader.isFabric)
 stonecutter.const("neoforge", loader.isNeoforge)
 
+stonecutter.allowExtensions("json")
+
 blossom {
 	replaceToken("@MODID@", mod.id)
 }
