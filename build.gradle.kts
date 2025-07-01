@@ -1,7 +1,11 @@
 plugins {
-	id("dev.architectury.loom") version "1.10.+"
-	id("me.modmuss50.mod-publish-plugin") version "0.8.4"
-	id("net.kyori.blossom") version "1.3.2"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.loom)
+    alias(libs.plugins.publishing)
+    alias(libs.plugins.blossom)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.fletchingtable.fabric)
+    alias(libs.plugins.fletchingtable.neoforge)
 }
 
 class ModData {
@@ -20,6 +24,8 @@ class ModData {
 }
 
 class Dependencies {
+    val neoforgeVersion = property("deps.neoforge_version")
+    val fabricLoaderVersion = property("deps.fabric_loader_version")
 	val fabricApiVersion = property("deps.fabric_api_version")
 	val modmenuVersion = property("deps.modmenu_version")
 	val yaclVersion = property("deps.yacl_version")
@@ -86,6 +92,12 @@ loom.runs {
 	}
 }
 
+fletchingTable {
+    mixins.create("main") {
+        default = "${mod.id}.mixins.json"
+    }
+}
+
 repositories {
 	maven("https://maven.parchmentmc.org") // Parchment
 	maven("https://maven.isxander.dev/releases") // YACL
@@ -108,7 +120,7 @@ dependencies {
 
 		// Parchment mappings (it adds parameter mappings & javadoc)
 		optionalProp("deps.parchment_version") {
-			parchment("org.parchmentmc.data:parchment-${property("mod.mc_version")}:$it@zip")
+			parchment("org.parchmentmc.data:parchment-${mc.version}:$it@zip")
 		}
 	})
 
@@ -117,12 +129,12 @@ dependencies {
 	include(implementation(annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-${loader.loader}:${deps.mixinsquaredVersion}")!!)!!)
 
 	if (loader.isFabric) {
-		modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
+		modImplementation("net.fabricmc:fabric-loader:${deps.fabricLoaderVersion}")!!
 		modImplementation("net.fabricmc.fabric-api:fabric-api:${deps.fabricApiVersion}+${mc.version}")
 		modImplementation("dev.isxander:yet-another-config-lib:${deps.yaclVersion}+${mc.version}-${loader.loader}")
 		modImplementation("com.terraformersmc:modmenu:${deps.modmenuVersion}")
 	} else if (loader.isNeoforge) {
-		"neoForge"("net.neoforged:neoforge:${findProperty("deps.neoforge")}")
+		"neoForge"("net.neoforged:neoforge:${deps.neoforgeVersion}")
 		implementation("dev.isxander:yet-another-config-lib:${deps.yaclVersion}+${mc.version}-${loader.loader}") { isTransitive = false }
 	}
 
@@ -211,13 +223,8 @@ publishMods {
 
 java {
 	// withSourcesJar() // Uncomment if you want sources
-	val java = if (stonecutter.compare(
-			stonecutter.current.version,
-			"1.20.6"
-		) >= 0
-	) JavaVersion.VERSION_21 else JavaVersion.VERSION_17
-	sourceCompatibility = java
-	targetCompatibility = java
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.processResources {
@@ -234,15 +241,16 @@ tasks.processResources {
 		put("curseforge", mod.curseforge)
 		put("kofi", mod.kofi)
 		put("discord", mod.discord)
-		put("modmenu_version", deps.modmenuVersion)
 		put("yacl_version", deps.yaclVersion)
 
-		if (loader.isNeoforge) {
-			put("forgeConstraint", findProperty("modstoml.forge_constraint"))
+		if (loader.isFabric) {
+            put("fabric_loader_version", deps.fabricLoaderVersion)
+            put("modmenu_version", deps.modmenuVersion)
 		}
-		if (mc.version == "1.20.1" || mc.version == "1.20.4") {
-			put("forge_id", loader.loader)
-		}
+
+        if (loader.isNeoforge) {
+            put("forge_version", deps.neoforgeVersion)
+        }
 	}
 
 	props.forEach(inputs::property)
@@ -254,17 +262,12 @@ tasks.processResources {
 
 	if (loader.isFabric) {
 		filesMatching("fabric.mod.json") { expand(props) }
-		exclude(listOf("META-INF/mods.toml", "META-INF/neoforge.mods.toml"))
+		exclude(listOf("META-INF/neoforge.mods.toml"))
 	}
 
 	if (loader.isNeoforge) {
-		if (mc.version == "1.20.4") {
-			filesMatching("META-INF/mods.toml") { expand(props) }
-			exclude("fabric.mod.json", "META-INF/neoforge.mods.toml")
-		} else {
-			filesMatching("META-INF/neoforge.mods.toml") { expand(props) }
-			exclude("fabric.mod.json", "META-INF/mods.toml")
-		}
+        filesMatching("META-INF/neoforge.mods.toml") { expand(props) }
+        exclude("fabric.mod.json")
 	}
 }
 

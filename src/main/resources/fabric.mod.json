@@ -17,23 +17,12 @@
 	"license": "${license}",
 	"icon": "assets/${id}/icon.png",
 	"environment": "client",
-	"entrypoints": {
-		"main": [
-			"dev.microcontrollers.examplemod.ExampleMod"
-		],
-		"modmenu": [
-			"dev.microcontrollers.examplemod.config.ModMenuIntegration"
-		]
-	},
-	"mixins": [
-		"${id}.mixins.json"
-	],
 	"depends": {
-		"fabricloader": ">=0.16.10",
+		"fabricloader": ">=${fabric_loader_version}",
 		"minecraft": "${mcdep}",
-		"java": ">=17",
+		"java": ">=21",
 		"fabric-api": "*",
-		"yet_another_config_lib_v3": "*"
+		"yet_another_config_lib_v3": ">=${yacl_version}"
 	},
 	"breaks": {
 		"feather": "*",

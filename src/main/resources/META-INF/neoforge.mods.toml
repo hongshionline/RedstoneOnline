@@ -14,7 +14,7 @@ logoFile = "assets/${id}/icon.png"
 [["dependencies.${id}"]]
 modId = "neoforge"
 type = "required"
-versionRange = "[${forgeConstraint}"
+versionRange = "[${forge_version},)"
 ordering = "NONE"
 side = "CLIENT"
 
@@ -31,6 +31,3 @@ type = "required"
 versionRange = "[${yacl_version},)"
 ordering = "BEFORE"
 side = "CLIENT"
-
-[[mixins]]
-config = "${id}.mixins.json"

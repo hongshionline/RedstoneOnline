@@ -36,4 +36,10 @@ stonecutter {
 	}
 }
 
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs")
+    }
+}
+
 rootProject.name = "ExampleMod"
