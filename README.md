@@ -22,7 +22,7 @@ The supported Minecraft versions and loaders are also stated here.
 
 ### In `fabric.mod.json`
 
-The `authors` field, as well as the main and modmenu entrypoints.
+The `authors` field.
 
 ### In `neoforge.mods.toml`
 
