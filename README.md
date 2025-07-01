@@ -4,6 +4,10 @@ A multiversion, multiloader template powered by Archloom and Stonecutter. Made f
 
 This template is made primarily suited for my own needs, but should be very simple to edit what you need!
 
+## Important Notes
+
+Mixins are automatically registered. This allows easy preprocessing of mixins without needing to add preprocessing to the mixin json file as they get added during compile, you can now simply preprocess out the @Mixin annotation.
+
 ## What to Change
 
 ### In `gradle.properties`:
