@@ -1,6 +1,6 @@
 {
-  "modmenu.descriptionTranslation.examplemod": "${description}",
-  "examplemod.examplemod": "ExampleMod",
-  "examplemod.example": "Example",
-  "examplemod.example.description": "Example_description."
+  "modmenu.descriptionTranslation.${id}": "${description}",
+  "${id}.${id}": "${name}",
+  "${id}.example": "Example",
+  "${id}.example.description": "Example_description."
 }
