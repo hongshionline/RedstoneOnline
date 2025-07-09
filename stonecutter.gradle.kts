@@ -1,6 +1,6 @@
 plugins {
     id("dev.kikugie.stonecutter")
-    id("me.modmuss50.mod-publish-plugin") version "0.8.4"
+    alias(libs.plugins.publishing)
 }
 stonecutter active "1.21.6-fabric" /* [SC] DO NOT EDIT */
 

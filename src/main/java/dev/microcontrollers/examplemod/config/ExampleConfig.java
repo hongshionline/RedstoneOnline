@@ -27,7 +27,7 @@ public class ExampleConfig {
                 .category(ConfigCategory.createBuilder()
                         .name(Component.translatable("examplemod.examplemod"))
                         .option(Option.<Boolean>createBuilder()
-                                .name(Component.translatable("examplemod.example"))
+                                .name(Component.translatable("examplemod.example.name"))
                                 .description(OptionDescription.of(Component.translatable("examplemod.example.description")))
                                 .binding(defaults.example, () -> config.example, newVal -> config.example = newVal)
                                 .controller(TickBoxControllerBuilder::create)
