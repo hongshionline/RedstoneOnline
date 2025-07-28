@@ -54,10 +54,10 @@ version = "${mod.version}+${mc.version}-${loader.loader}"
 group = mod.group
 base { archivesName.set(mod.id) }
 
-stonecutter.const("fabric", loader.isFabric)
-stonecutter.const("neoforge", loader.isNeoforge)
-
-stonecutter.allowExtensions("json")
+stonecutter {
+    constants["fabric"] = loader.isFabric
+    constants["neoforge"] = loader.isNeoforge
+}
 
 blossom {
     replaceToken("@MODID@", mod.id)
@@ -87,14 +87,14 @@ loom.runs {
             vmArg("-XX:+AllowEnhancedClassRedefinition")
 
             property("mixin.hotSwap", "true")
-            property("mixin.debug.export", "true") // Puts mixin outputs in run/.mixin.out
+            property("mixin.debug.export", "true") // Puts mixin outputs in /run/.mixin.out
         }
     }
 }
 
 fletchingTable {
     mixins.create("main") {
-        default = "${mod.id}.mixins.json"
+        mixin("default", "${mod.id}.mixins.json")
     }
 
     lang.create("main") {
@@ -161,7 +161,7 @@ publishMods {
 
     displayName = "${mod.name} ${mod.version}"
     this.version = mod.version.toString()
-    changelog = rootProject.file("CHANGELOG.md").readText()
+    changelog = project.rootProject.file("CHANGELOG.md").takeIf { it.exists() }?.readText() ?: "No changelog provided."
     type = STABLE
 
     modLoaders.add(loader.loader)
