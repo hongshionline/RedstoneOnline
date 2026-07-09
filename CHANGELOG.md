@@ -1,1 +1,7 @@
-Write a changelog in here for a version before publishing it via the publishMods task
+# v1.0.0
+
+- 支持 Fabric 和 NeoForge
+- 支持 1.20.1 ~ 1.21.11 多版本
+- 开局域网后自动建立内网穿透隧道
+- 聊天栏选择服务器，超时自动选延迟最低的
+- 一键复制联机地址到剪切板

@@ -5,7 +5,7 @@
 	"name": "${name}",
 	"description": "${description}",
 	"authors": [
-		"Microcontrollers"
+		"hongshi"
 	],
 	"contributors": [
 	],
@@ -20,24 +20,6 @@
 	"depends": {
 		"fabricloader": ">=${fabric_loader_version}",
 		"minecraft": "${mcdep}",
-		"java": ">=21",
-		"fabric-api": "*",
-		"yet_another_config_lib_v3": ">=${yacl_version}"
-	},
-	"breaks": {
-		"feather": "*",
-		"labymod": "*",
-		"ichor": "*"
-	},
-	"custom": {
-		"modmenu": {
-			"links": {
-				"modmenu.kofi": "${kofi}",
-				"modmenu.discord": "${discord}",
-				"modmenu.modrinth": "${modrinth}",
-				"modmenu.curseforge": "${curseforge}"
-			},
-			"update_checker": true
-		}
+		"java": ">=21"
 	}
 }

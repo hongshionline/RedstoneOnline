@@ -7,7 +7,7 @@ license = "${license}"
 modId = "${id}"
 version = "${version}"
 displayName = "${name}"
-authors = "Microcontrollers"
+authors = "hongshi"
 description = "${description}"
 logoFile = "assets/${id}/icon.png"
 
@@ -25,9 +25,4 @@ versionRange = "${mcdep}"
 ordering = "NONE"
 side = "CLIENT"
 
-[["dependencies.${id}"]]
-modId = "yet_another_config_lib_v3"
-type = "required"
-versionRange = "[${yacl_version},)"
-ordering = "BEFORE"
-side = "CLIENT"
+

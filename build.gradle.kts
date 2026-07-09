@@ -27,8 +27,6 @@ class Dependencies {
     val neoforgeVersion = property("deps.neoforge_version")
     val fabricLoaderVersion = property("deps.fabric_loader_version")
     val fabricApiVersion = property("deps.fabric_api_version")
-    val modmenuVersion = property("deps.modmenu_version")
-    val yaclVersion = property("deps.yacl_version")
     val devauthVersion = property("deps.devauth_version")
     val mixinconstraintsVersion = property("deps.mixinconstraints_version")
     val mixinsquaredVersion = property("deps.mixinsquared_version")
@@ -104,10 +102,6 @@ fletchingTable {
 
 repositories {
     maven("https://maven.parchmentmc.org") // Parchment
-    maven("https://maven.isxander.dev/releases") // YACL
-    maven("https://thedarkcolour.github.io/KotlinForForge") // Kotlin for Forge - required by YACL
-    maven("https://maven.terraformersmc.com") // Mod Menu
-    maven("https://maven.nucleoid.xyz/") // Placeholder API - required by Mod Menu
     maven("https://maven.neoforged.net/releases") // NeoForge
     maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1") // DevAuth
     maven("https://maven.bawnorton.com/releases") // MixinSquared
@@ -134,12 +128,8 @@ dependencies {
 
     if (loader.isFabric) {
         modImplementation("net.fabricmc:fabric-loader:${deps.fabricLoaderVersion}")!!
-        modImplementation("net.fabricmc.fabric-api:fabric-api:${deps.fabricApiVersion}+${mc.version}")
-        modImplementation("dev.isxander:yet-another-config-lib:${deps.yaclVersion}+${mc.version}-${loader.loader}")
-        modImplementation("com.terraformersmc:modmenu:${deps.modmenuVersion}")
     } else if (loader.isNeoforge) {
         "neoForge"("net.neoforged:neoforge:${deps.neoforgeVersion}")
-        implementation("dev.isxander:yet-another-config-lib:${deps.yaclVersion}+${mc.version}-${loader.loader}") { isTransitive = false }
     }
 
 }
@@ -186,13 +176,6 @@ publishMods {
                 minecraftVersions.add(mc.dep)
             }
 
-            if (loader.isFabric) {
-                requires("fabric-api")
-                requires("yacl")
-                requires("modmenu")
-            } else if (loader.isNeoforge) {
-                requires("yacl")
-            }
         }
     }
 
@@ -214,13 +197,7 @@ publishMods {
                 minecraftVersions.add(mc.dep)
             }
 
-            if (loader.isFabric) {
-                requires("fabric-api")
-                requires("yacl")
-                optional("modmenu")
-            } else if (loader.isNeoforge) {
-                requires("yacl")
-            }
+
         }
     }
 }
@@ -245,11 +222,9 @@ tasks.processResources {
         put("curseforge", mod.curseforge)
         put("kofi", mod.kofi)
         put("discord", mod.discord)
-        put("yacl_version", deps.yaclVersion)
 
         if (loader.isFabric) {
             put("fabric_loader_version", deps.fabricLoaderVersion)
-            put("modmenu_version", deps.modmenuVersion)
         }
 
         if (loader.isNeoforge) {
