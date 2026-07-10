@@ -178,20 +178,12 @@ public class PublishServerMixin {
     /** 执行 /rs open 逻辑 */
     @Unique
     private int execOpen(CommandSourceStack src, int maxPlayers) {
-        int port = getLanPort();
-        if (port <= 0) {
-            src.sendFailure(Component.literal("§c未检测到局域网房间 (端口 25565)"));
-            return 0;
-        }
-
         Server server = RedstoneOnline.servers.get(RedstoneOnline.chooseServer);
-        RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] /rs open: server={}, addr={}, port={}, maxPlayers={}",
-            server.name, server.address, port, maxPlayers);
         src.sendSuccess(() ->
-            Component.literal("§a[红石联机]§r正在使用 §e" + server.name + "§r 创建隧道..."), false);
+            Component.literal("§a[红石联机]§r正在使用 §e" + server.name + "§r 等待玩家连入..."), false);
 
         new Thread(() -> {
-            Frp.start(server.address, port, port, maxPlayers);
+            Frp.start(server.address, maxPlayers, redstoneOnline$server);
 
             String addr = Frp.getAddress();
             if (addr != null) {
