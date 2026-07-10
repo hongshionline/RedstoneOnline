@@ -191,19 +191,47 @@ public class Frp {
 
     /**
      * 获取 GLFW 窗口句柄，兼容不同 MC 版本的 API 差异
+     * 返回 0 表示获取失败
      */
     public static long getGlfwWindow() {
         Object w = net.minecraft.client.Minecraft.getInstance().getWindow();
-        for (String name : new String[]{"getWindow", "getGlfwWindow", "window"}) {
+        // 先尝试方法名
+        for (String name : new String[]{"getWindow", "getGlfwWindow", "getHandle", "window"}) {
             try {
                 Method m = w.getClass().getMethod(name);
-                if (m.getReturnType() == long.class) {
-                    return (long) m.invoke(w);
-                }
-            } catch (Exception ignored) {
-            }
+                Class<?> ret = m.getReturnType();
+                if (ret == long.class) return (long) m.invoke(w);
+                if (ret == Long.class) { Long val = (Long) m.invoke(w); if (val != null) return val; }
+            } catch (Exception ignored) {}
+        }
+        // 再尝试直接读字段
+        for (String name : new String[]{"window", "handle", "glfwWindow"}) {
+            try {
+                java.lang.reflect.Field f = w.getClass().getField(name);
+                if (f.getType() == long.class) return f.getLong(w);
+            } catch (Exception ignored) {}
         }
         return 0;
+    }
+
+    /**
+     * 复制文本到系统剪切板，先试 GLFW，失败后试 AWT
+     */
+    public static void copyToClipboard(String text) {
+        // 方法一：GLFW
+        try {
+            long window = getGlfwWindow();
+            if (window != 0) {
+                GLFW.glfwSetClipboardString(window, text);
+                return;
+            }
+        } catch (Exception ignored) {}
+        // 方法二：AWT 回退
+        try {
+            java.awt.Toolkit.getDefaultToolkit()
+                .getSystemClipboard()
+                .setContents(new java.awt.datatransfer.StringSelection(text), null);
+        } catch (Exception ignored) {}
     }
 
     /**

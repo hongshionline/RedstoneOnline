@@ -7,7 +7,6 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -46,10 +45,8 @@ public class PublishServerMixin {
                         Minecraft.getInstance().execute(() -> {
                             if (Minecraft.getInstance().player != null) {
                                 Minecraft.getInstance().player.displayClientMessage(
-                                    Component.literal("§6===== §e红石联机 §6=====\n"
-                                        + "§7输入 §e/rs§7 查看帮助\n"
-                                        + "§7开局域网后输入 §e/rs open§7 开启穿透"),
-                                    false);
+                                    Component.literal("§6[§c红石联机§6] §7输入 §e/rs§7 查看帮助 | §7仅监听 25565 端口"),
+                                    true);
                             }
                         });
                         return;
@@ -113,14 +110,16 @@ public class PublishServerMixin {
 
                             String addr = Frp.getAddress();
                             if (addr != null) {
+                                Frp.copyToClipboard(addr);
                                 Minecraft.getInstance().execute(() -> {
-                                    try {
-                                        long w = Frp.getGlfwWindow();
-                                        if (w != 0) GLFW.glfwSetClipboardString(w, addr);
-                                    } catch (Exception ignored) {}
                                     if (Minecraft.getInstance().player != null) {
+                                        // ActionBar
                                         Minecraft.getInstance().player.displayClientMessage(
-                                            Component.literal("§c[红石联机]§r房间已开启，地址:§a" + addr + "§r §e已复制到剪切板"),
+                                            Component.literal("§a✔ 隧道已开启 §7| §c" + addr),
+                                            true);
+                                        // 聊天栏详细
+                                        Minecraft.getInstance().player.displayClientMessage(
+                                            Component.literal("§c[红石联机]§r地址已复制到剪切板: §a" + addr),
                                             false);
                                     }
                                 });
@@ -140,11 +139,12 @@ public class PublishServerMixin {
                 // /rs (无参数) 显示帮助
                 .executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(
-                        "§6===== §e红石联机 帮助 §6=====\n"
+                        "§6===== §c红石联机 §6=====\n"
                         + " §b/rs server list§r  - 列出服务器\n"
                         + " §b/rs server <n>§r   - 选择服务器\n"
                         + " §b/rs open§r          - 开启内网穿透\n"
-                        + " §b/rs close§r         - 关闭内网穿透"), false);
+                        + " §b/rs close§r         - 关闭内网穿透\n"
+                        + " §7⚠ 仅监听 25565 端口"), false);
                     return 1;
                 })
             );
