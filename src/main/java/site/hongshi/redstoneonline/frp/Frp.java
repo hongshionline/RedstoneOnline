@@ -215,23 +215,17 @@ public class Frp {
     }
 
     /**
-     * 复制文本到系统剪切板，先试 GLFW，失败后试 AWT
+     * 复制文本到系统剪切板（使用 AWT）
      */
     public static void copyToClipboard(String text) {
-        // 方法一：GLFW
-        try {
-            long window = getGlfwWindow();
-            if (window != 0) {
-                GLFW.glfwSetClipboardString(window, text);
-                return;
-            }
-        } catch (Exception ignored) {}
-        // 方法二：AWT 回退
         try {
             java.awt.Toolkit.getDefaultToolkit()
                 .getSystemClipboard()
                 .setContents(new java.awt.datatransfer.StringSelection(text), null);
-        } catch (Exception ignored) {}
+            RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 剪切板复制成功: {}", text);
+        } catch (Exception e) {
+            RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 剪切板复制失败: {}", e.toString());
+        }
     }
 
     /**
