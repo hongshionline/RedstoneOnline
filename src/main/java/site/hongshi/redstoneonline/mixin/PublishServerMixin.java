@@ -181,33 +181,40 @@ public class PublishServerMixin {
     @Unique
     private static boolean isOwnPort(int port) {
         long myPid = ProcessHandle.current().pid();
+        RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 本进程PID: {}", myPid);
         String os = System.getProperty("os.name").toLowerCase();
         try {
             String[] cmd;
             if (os.contains("win")) {
                 cmd = new String[]{"cmd", "/c", "netstat -ano | findstr \":" + port + "\""};
             } else {
-                // Linux / macOS: 不需要 sudo
                 cmd = new String[]{"sh", "-c", "ss -tlnp sport = :" + port + " 2>/dev/null || lsof -i :" + port + " 2>/dev/null"};
             }
+            RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 执行命令: {}", String.join(" ", cmd));
+
             Process p = Runtime.getRuntime().exec(cmd);
             java.io.BufferedReader reader = new java.io.BufferedReader(
                 new java.io.InputStreamReader(p.getInputStream(), java.nio.charset.StandardCharsets.UTF_8));
             String line;
+            boolean found=false;
             while ((line = reader.readLine()) != null) {
-                // Windows: ...LISTENING  12345
-                // Linux ss: users:(("java",pid=12345,...))
-                // lsof: java 12345 ... TCP *:25565 (LISTEN)
+                RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] netstat输出: {}", line);
                 if (os.contains("win")) {
                     if (line.contains("LISTENING")) {
+                        found=true;
                         String[] parts = line.trim().split("\\s+");
                         String pidStr = parts[parts.length - 1];
+                        RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 解析到PID: {}", pidStr);
                         if (Long.parseLong(pidStr) == myPid) return true;
                     }
                 } else {
-                    // 在输出中找 pid=数字 或进程名后的数字
                     java.util.regex.Matcher m = java.util.regex.Pattern.compile("pid=(\\d+)").matcher(line);
-                    if (m.find() && Long.parseLong(m.group(1)) == myPid) return true;
+                    if (m.find()) {
+                        found=true;
+                        String foundPid = m.group(1);
+                        RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 解析到PID: {}", foundPid);
+                        if (Long.parseLong(foundPid) == myPid) return true;
+                    }
                     String[] parts = line.trim().split("\\s+");
                     if (parts.length >= 2) {
                         try {
@@ -217,7 +224,11 @@ public class PublishServerMixin {
                     }
                 }
             }
-        } catch (Exception ignored) {}
+            if(!found) RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 未找到端口 {} 的相关记录", port);
+        } catch (Exception e) {
+            RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] netstat执行异常: {}", e.toString());
+        }
+        RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 端口 {} 不属于本进程", port);
         return false;
     }
 
