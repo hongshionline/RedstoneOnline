@@ -1,79 +1,57 @@
-# multiloader-multiversion-template
+# RedstoneOnline 红石联机
 
-A multiversion, multiloader template powered by Archloom and Stonecutter. Made for Fabric & NeoForge.
+一个简单好用的 Minecraft 内网穿透模组。开局域网后一键建立隧道，让外网玩家直连你的游戏。
 
-This template is made primarily suited for my own needs, but should be very simple to edit what you need!
+## 特点
 
-## Important Notes
+- 🚀 **一键开连** — 开局域网后输入 `/rs open` 自动创建隧道
+- 🌐 **外网直连** — 无需端口转发、无需公网 IP
+- 📋 **自动复制** — 联机地址自动复制到剪贴板
+- 🖥 **多服选择** — 支持配置多个 frp 服务器
+- 🔑 **自动注册** — API Key 自动生成缓存，重启不丢失
+- 🛡 **关闭正版验证** — 非正版玩家也可加入
+- 🔒 **端口安全** — 仅检测 25565 端口，PID 校验避免误连
 
-Mixins are automatically registered. This allows easy preprocessing of mixins without needing to add preprocessing to the mixin json file as they get added during compile, you can now simply preprocess out the @Mixin annotation.
+## 命令
 
-## What to Change
+| 命令 | 说明 |
+|------|------|
+| `/rs` | 显示帮助菜单 |
+| `/rs server list` | 列出服务器 |
+| `/rs server <n>` | 选择服务器 |
+| `/rs open` | 开启内网穿透（需先开局域网） |
+| `/rs close` | 关闭内网穿透 |
 
-### In `gradle.properties`:
+## 使用说明
 
-Change any properties needed. Some properties are versioned, meaning you need to edit them for every Minecraft version or loader.
+1. 安装模组，启动游戏
+2. 进世界后聊天栏出现红石联机提示
+3. 输入 `/rs server list` 查看服务器列表
+4. 输入 `/rs server 1` 选择服务器
+5. ESC → 对局域网开放（需用其他模组固定端口 25565）
+6. 输入 `/rs open` 创建隧道，地址自动复制到剪贴板
+7. 把地址发给朋友即可加入
 
-These `gradle.properties` files can be found in the `versions` folder. You may need to edit some of these folders/properties depending on what versions you are planning on supporting.
+## 支持版本
 
-**Note**: mc_dep fields must be in the format `x`, `>=x`, or `>=x <=y`
+| 版本 | Fabric | NeoForge |
+|------|--------|----------|
+| 1.20.1 | ✅ | ❌ |
+| 1.20.4 | ✅ | ✅ |
+| 1.20.6 | ✅ | ✅ |
+| 1.21.1 | ✅ | ✅ |
+| 1.21.4 | ✅ | ✅ |
+| 1.21.8 | ✅ | ✅ |
+| 1.21.11 | ✅ | ❌ |
 
-### In `settings.gradle.kts`:
+## 构建
 
-Change the rootProject.name at the bottom to your mod's name.
+```bash
+.\gradlew.bat build
+```
 
-The supported Minecraft versions and loaders are also stated here.
+## 发布
 
-### In `fabric.mod.json`
-
-The `authors` field.
-
-### In `neoforge.mods.toml`
-
-The `authors` field.
-
-### File & Folder Names
-
-Remember to rename your files and folders to your group and project name.
-
-### In `examplemod.mixins.json`
-
-The `package` field.
-
-### Change License
-
-Remember to properly set up a license file. This template has one for the template itself (CC0-1.0) and one for myself that I use for all my mods (LGPL-3.0).
-
-## Other Notes
-
-### Publishing
-
-This template has a setup for Modrinth and CurseForge publishing.
-
-To enable publishing
-
-- Set your Modrinth and CurseForge project IDs in the project-level gradle.properties file
-- Set your API tokens in your Gradle user-level properties file
-
-For windows, this file is located at `C:\Users\{user}\.gradle\gradle.properties`
-
-Example entries for the user-level file:
-
-    modrinth.token=your_modrinth_token
-    curseforge.token=your_curseforge_token
-
-When publishing, the `CHANGELOG.md` file will be used to set the changelog.
-
-### Mixin Debug & HotSwap
-
-This setup attempts to set up HotSwap, Mixin HotSwap, and Mixin export debugging for every run config. HotSwap requires using JBR 21, so remember to switch to that or disable the JVM args in the `loom.runs` block in `build.gradle.kts`.
-
-Also, note that Mixin HotSwap is not supported on NeoForge. There should be no issue keeping the arguments for NeoForge, but let me know if issues do arise and it can easily be turned off.
-
-### Run Directory
-
-This setup uses the same run directory for all versions. See the `loom` block in `build.gradle.kts` to disable this.
-
-### ModMenu English Description
-
-This setup uses processResources to string replace the English description to be the one set in `gradle.properties`. You can change the default translation file in the `processResources` block in `build.gradle.kts`.
+```bash
+.\gradlew.bat publishMods
+```
