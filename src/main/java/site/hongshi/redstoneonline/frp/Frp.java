@@ -178,6 +178,8 @@ public class Frp {
                 }
                 stop();
             }, "R2L-Manager").start();
+
+            RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 隧道启动完成, listenPort={}, 本地端口={}", listenPort, localPort);
         } catch (Exception e) {
             RedstoneOnline.LOGGER.info("[RedstoneOnline] Start failed: {}", e.toString());
         }
@@ -212,7 +214,10 @@ public class Frp {
         stopped = true;
         running = false;
 
-        try { controlSocket.close(); } catch (Exception ignored) {}
+        RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 关闭隧道: 开始清理");
+        try { controlSocket.close(); } catch (Exception e) {
+            RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 关闭控制连接: {}", e.toString());
+        }
 
         try {
             HttpRequest request = HttpRequest.newBuilder()

@@ -102,6 +102,8 @@ public class PublishServerMixin {
                         }
 
                         Server server = RedstoneOnline.servers.get(RedstoneOnline.chooseServer);
+                        RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] /rs open: server={}, addr={}, port={}",
+                            server.name, server.address, port);
                         ctx.getSource().sendSuccess(() ->
                             Component.literal("§a[红石联机]§r正在使用 §e" + server.name + "§r 创建隧道..."), false);
 
