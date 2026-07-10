@@ -105,67 +105,61 @@ public class Frp {
             }
 
             running = true;
-            controlSocket.setSoTimeout(5000); // 后续读超时5秒，定期检查本地连接
+            controlSocket.setSoTimeout(10000);
             new Thread(() -> {
-                while (running) {
-                    try (Socket ls = new Socket("127.0.0.1", localPort)) {
-                        ls.setTcpNoDelay(true);
-                        ls.setKeepAlive(true);
-                        InputStream li0 = ls.getInputStream();
-                        OutputStream lo0 = ls.getOutputStream();
-                        final InputStream i0 = li0;
-                        Thread l2r = new Thread(() -> {
-                            try { pipe(i0, ctrlOut); } catch (Exception ignored) {}
-                        }, "L2R");
-                        l2r.start();
+                Socket ls = null;
+                Socket l2rSocket = null;
+                InputStream li = null;
+                OutputStream lo = null;
+                Thread l2r = null;
 
-                        Socket currentLs = ls;
-                        byte[] buf = new byte[4096];
-                        while (running) {
-                            int n;
-                            try {
-                                n = ctrlIn.read(buf);
-                                if (n == -1) break;
-                            } catch (java.net.SocketTimeoutException e) {
-                                // 读超时，检查本地连接并重连
-                                if (currentLs.isClosed() || !currentLs.isConnected()) {
-                                    throw new Exception("local socket timeout");
-                                }
-                                continue;
-                            }
-                            // 检查本地连接是否还存活
-                            if (currentLs.isClosed() || !currentLs.isConnected()) {
-                                throw new Exception("local socket closed");
-                            }
-                            for (int retry = 0; retry < 3 && running; retry++) {
-                                try {
-                                    lo0.write(buf, 0, n); lo0.flush(); break;
-                                } catch (Exception e) {
-                                    try { Thread.sleep(1000); } catch (InterruptedException ex) { break; }
-                                    try {
-                                        currentLs.close();
-                                    } catch (Exception ignored) {}
-                                    try {
-                                        currentLs = new Socket("127.0.0.1", localPort);
-                                        currentLs.setTcpNoDelay(true);
-                                        li0 = currentLs.getInputStream();
-                                        lo0 = currentLs.getOutputStream();
-                                        l2r.interrupt();
-                                        final InputStream fli = li0;
-                                        l2r = new Thread(() -> {
-                                            try { pipe(fli, ctrlOut); } catch (Exception ignored) {}
-                                        }, "L2R");
-                                        l2r.start();
-                                    } catch (Exception ignored) {}
-                                }
-                            }
+                while (running) {
+                    byte[] buf = new byte[4096];
+                    int n;
+                    try {
+                        n = ctrlIn.read(buf);
+                        if (n == -1) break;
+                    } catch (java.net.SocketTimeoutException e) {
+                        // 超时：检查并重连本地
+                        if (ls != null && !ls.isConnected()) {
+                            try { ls.close(); } catch (Exception ignored) {}
+                            ls = null;
                         }
-                    } catch (Exception e) {
-                        if (running) try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                        continue;
+                    } catch (Exception e) { break; }
+
+                    // 确保本地连接存在、写入前关闭旧连接强制重连
+                    boolean connected = false;
+                    for (int retry = 0; retry < 3; retry++) {
+                        try {
+                            if (ls != null) ls.close();
+                            ls = new Socket("127.0.0.1", localPort);
+                            ls.setTcpNoDelay(true);
+                            ls.setKeepAlive(true);
+                            li = ls.getInputStream();
+                            lo = ls.getOutputStream();
+
+                            // 重启 L2R
+                            if (l2r != null) l2r.interrupt();
+                            InputStream fli = li;
+                            l2r = new Thread(() -> {
+                                try { pipe(fli, ctrlOut); } catch (Exception ignored) {}
+                            }, "L2R");
+                            l2r.start();
+
+                            lo.write(buf, 0, n);
+                            lo.flush();
+                            connected = true;
+                            break;
+                        } catch (Exception e) {
+                            try { Thread.sleep(500); } catch (InterruptedException ex) { break; }
+                        }
                     }
+                    if (!connected) break;
                 }
+                try { if (ls != null) ls.close(); } catch (Exception ignored) {}
                 stop();
-            }, "R2L-Manager").start();
+            }, "R2L").start();
 
             RedstoneOnline.LOGGER.info("[RedstoneOnline] 隧道启动完成, listenPort={}, 本地端口={}", listenPort, localPort);
         } catch (Exception e) {

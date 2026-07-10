@@ -32,11 +32,8 @@ public class PublishServerMixin {
     private void onInit(CallbackInfo ci) {
         this.redstoneOnline$server = (MinecraftServer) (Object) this;
 
-        try {
-            Method setAuth = MinecraftServer.class.getDeclaredMethod("setUsesAuthentication", boolean.class);
-            setAuth.invoke(redstoneOnline$server, false);
-        } catch (Exception ignored) {
-        }
+        // 关闭正版验证（兼容各版本方法名和字段名）
+        disableOnlineMode();
 
         new Thread(() -> {
             for (int i = 0; i < 50; i++) {
@@ -257,6 +254,51 @@ public class PublishServerMixin {
                 .invoke(pl, player.getGameProfile());
         } catch (Exception ignored) {}
         return false;
+    }
+
+    /** 关闭正版验证，尝试方法名、字段名、延迟重试 */
+    @Unique
+    private void disableOnlineMode() {
+        // 立即尝试方法
+        for (String name : new String[]{"setUsesAuthentication", "setOnlineMode", "setAuthMode"}) {
+            try {
+                Method m = MinecraftServer.class.getDeclaredMethod(name, boolean.class);
+                m.invoke(redstoneOnline$server, false);
+                RedstoneOnline.LOGGER.info("[RedstoneOnline] Online mode disabled via {}", name);
+                return;
+            } catch (Exception ignored) {}
+        }
+        // 直接设字段
+        for (String name : new String[]{"usesAuthentication", "onlineMode"}) {
+            try {
+                java.lang.reflect.Field f = MinecraftServer.class.getDeclaredField(name);
+                f.setAccessible(true);
+                f.set(redstoneOnline$server, false);
+                RedstoneOnline.LOGGER.info("[RedstoneOnline] Online mode disabled via field {}", name);
+                return;
+            } catch (Exception ignored) {}
+        }
+        // 延迟重试（等服务器初始化完成）
+        new Thread(() -> {
+            try { Thread.sleep(10000); } catch (InterruptedException e) { return; }
+            for (String name : new String[]{"setUsesAuthentication", "setOnlineMode", "setAuthMode"}) {
+                try {
+                    Method m = MinecraftServer.class.getDeclaredMethod(name, boolean.class);
+                    m.invoke(redstoneOnline$server, false);
+                    RedstoneOnline.LOGGER.info("[RedstoneOnline] Online mode disabled (delayed) via {}", name);
+                    return;
+                } catch (Exception ignored) {}
+            }
+            for (String name : new String[]{"usesAuthentication", "onlineMode"}) {
+                try {
+                    java.lang.reflect.Field f = MinecraftServer.class.getDeclaredField(name);
+                    f.setAccessible(true);
+                    f.set(redstoneOnline$server, false);
+                    RedstoneOnline.LOGGER.info("[RedstoneOnline] Online mode disabled (delayed) via field {}", name);
+                    return;
+                } catch (Exception ignored) {}
+            }
+        }, "RedstoneOnline-OnlineMode").start();
     }
 
     /** 通过反射获取局域网端口，未开启返回 -1 */
