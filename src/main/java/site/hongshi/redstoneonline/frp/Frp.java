@@ -71,6 +71,10 @@ public class Frp {
      * 4. 双向 pipe：7000 ↔ 本地 Minecraft
      */
     public static void start(String serverAddress, int serverPort, int localPort) {
+        start(serverAddress, serverPort, localPort, 1);
+    }
+
+    public static void start(String serverAddress, int serverPort, int localPort, int maxPlayers) {
         try {
             if (RedstoneOnline.apikey == null || RedstoneOnline.apikey.isEmpty()) {
                 throw new Exception("apikey is empty");
@@ -108,8 +112,9 @@ public class Frp {
                 }
             } else {
                 // 没有已有隧道，通过 HTTP 创建
+                URI tunnelUri = URI.create("http://" + serverAddress + ":3000/tunnels?maxPlayers=" + maxPlayers);
                 HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://" + serverAddress + ":3000/tunnels"))
+                    .uri(tunnelUri)
                     .header("Authorization", RedstoneOnline.apikey)
                     .POST(HttpRequest.BodyPublishers.noBody())
                     .build();
@@ -215,16 +220,23 @@ public class Frp {
     }
 
     /**
-     * 复制文本到系统剪切板（使用 AWT）
+     * 复制文本到剪切板（Win: clip, Mac: pbcopy, Linux: xclip）
      */
     public static void copyToClipboard(String text) {
         try {
-            java.awt.Toolkit.getDefaultToolkit()
-                .getSystemClipboard()
-                .setContents(new java.awt.datatransfer.StringSelection(text), null);
-            RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 剪切板复制成功: {}", text);
+            String os = System.getProperty("os.name").toLowerCase();
+            String[] cmd;
+            if (os.contains("win")) {
+                cmd = new String[]{"cmd", "/c", "echo " + text + " | clip"};
+            } else if (os.contains("mac")) {
+                cmd = new String[]{"bash", "-c", "echo -n '" + text + "' | pbcopy"};
+            } else {
+                cmd = new String[]{"bash", "-c", "echo -n '" + text + "' | xclip -selection clipboard 2>/dev/null || echo -n '" + text + "' | xsel -ib"};
+            }
+            Runtime.getRuntime().exec(cmd);
+            RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 剪切板命令已执行: {}", String.join(" ", cmd));
         } catch (Exception e) {
-            RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 剪切板复制失败: {}", e.toString());
+            RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] 剪切板失败: {}", e.toString());
         }
     }
 

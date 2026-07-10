@@ -5,8 +5,11 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -64,7 +67,7 @@ public class PublishServerMixin {
                 redstoneOnline$server.getCommands().getDispatcher();
 
             dispatcher.register(Commands.literal("rs")
-                // /rs server list
+                // /rs server list (等级0)
                 .then(Commands.literal("server")
                     .then(Commands.literal("list")
                         .executes(ctx -> {
@@ -77,9 +80,10 @@ public class PublishServerMixin {
                             ctx.getSource().sendSuccess(() -> Component.literal(sb.toString()), false);
                             return 1;
                         }))
-                    // /rs server <number>
+                    // /rs server <number> (等级3+)
                     .then(Commands.argument("num", IntegerArgumentType.integer(1, RedstoneOnline.servers.size()))
                         .executes(ctx -> {
+                            if (!checkPerm(ctx.getSource(), 3)) return 0;
                             int idx = IntegerArgumentType.getInteger(ctx, "num") - 1;
                             RedstoneOnline.chooseServer = idx;
                             ctx.getSource().sendSuccess(
@@ -87,68 +91,177 @@ public class PublishServerMixin {
                                     + RedstoneOnline.servers.get(idx).name), false);
                             return 1;
                         })))
-                // /rs open
+                // /rs open [maxPlayers] (等级4)
                 .then(Commands.literal("open")
-                    .executes(ctx -> {
-                        // 检查局域网是否已开启
-                        int port = getLanPort();
-                        if (port <= 0) {
-                            ctx.getSource().sendFailure(
-                                Component.literal("§c未检测到局域网房间 (端口 25565)"));
-                            return 0;
-                        }
-
-                        Server server = RedstoneOnline.servers.get(RedstoneOnline.chooseServer);
-                        RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] /rs open: server={}, addr={}, port={}",
-                            server.name, server.address, port);
-                        ctx.getSource().sendSuccess(() ->
-                            Component.literal("§a[红石联机]§r正在使用 §e" + server.name + "§r 创建隧道..."), false);
-
-                        // 在后台线程启动隧道，不阻塞命令
-                        new Thread(() -> {
-                            Frp.start(server.address, port, port);
-
-                            String addr = Frp.getAddress();
-                            if (addr != null) {
-                                Frp.copyToClipboard(addr);
-                                Minecraft.getInstance().execute(() -> {
-                                    if (Minecraft.getInstance().player != null) {
-                                        // ActionBar
-                                        Minecraft.getInstance().player.displayClientMessage(
-                                            Component.literal("§a✔ 隧道已开启 §7| §c" + addr),
-                                            true);
-                                        // 聊天栏详细
-                                        Minecraft.getInstance().player.displayClientMessage(
-                                            Component.literal("§c[红石联机]§r地址已复制到剪切板: §a" + addr),
-                                            false);
-                                    }
-                                });
-                            }
-                        }, "RedstoneOnline-Open").start();
-
-                        return 1;
-                    }))
-                // /rs close
+                    .requires(src -> getPermLevel(src) >= 4)
+                    .then(Commands.argument("maxPlayers", IntegerArgumentType.integer(1, 99))
+                        .executes(ctx -> execOpen(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "maxPlayers"))))
+                    .executes(ctx -> execOpen(ctx.getSource(), 1)))
+                // /rs close (等级4)
                 .then(Commands.literal("close")
+                    .requires(src -> getPermLevel(src) >= 4)
                     .executes(ctx -> {
                         Frp.stop();
                         ctx.getSource().sendSuccess(
                             () -> Component.literal("§a[红石联机]§r隧道已关闭"), false);
                         return 1;
                     }))
+                // /rs op <target> <level> (等级4)
+                .then(Commands.literal("op")
+                    .requires(src -> getPermLevel(src) >= 4)
+                    .then(Commands.argument("target", EntityArgument.player())
+                        .then(Commands.argument("level", IntegerArgumentType.integer(0, 4))
+                            .executes(ctx -> {
+                                ServerPlayer target = EntityArgument.getPlayer(ctx, "target");
+                                int lv = IntegerArgumentType.getInteger(ctx, "level");
+                                RedstoneOnline.permLevels.put(target.getUUID(), lv);
+                                ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "§a[红石联机]§r已将 §e" + target.getName().getString()
+                                    + "§r 的权限设为 §b" + lv), false);
+                                return 1;
+                            }))))
+                // /rs debug (等级5, 不显示在帮助列表)
+                .then(Commands.literal("debug")
+                    .executes(ctx -> {
+                        if (!checkPerm(ctx.getSource(), 5)) return 0;
+                        int myLevel = getPermLevel(ctx.getSource());
+                        int vanLevel = getVanillaLevel(ctx.getSource());
+                        StringBuilder sb = new StringBuilder("§6===== §c红石联机 §6调试信息 =====\n");
+                        sb.append(" §b红石等级: §f").append(myLevel).append("\n");
+                        sb.append(" §b原版等级: §f").append(vanLevel).append("\n");
+                        sb.append(" §bAPI Key: §f").append(RedstoneOnline.apikey).append("\n");
+                        sb.append(" §b已选服务器: §f").append(RedstoneOnline.servers.get(RedstoneOnline.chooseServer).name).append("\n");
+                        sb.append(" §b隧道状态: §f").append(Frp.getAddress() != null ? "已开启" : "未开启");
+                        ctx.getSource().sendSuccess(() -> Component.literal(sb.toString()), false);
+                        return 1;
+                    }))
                 // /rs (无参数) 显示帮助
                 .executes(ctx -> {
-                    ctx.getSource().sendSuccess(() -> Component.literal(
-                        "§6===== §c红石联机 §6=====\n"
-                        + " §b/rs server list§r  - 列出服务器\n"
-                        + " §b/rs server <n>§r   - 选择服务器\n"
-                        + " §b/rs open§r          - 开启内网穿透\n"
-                        + " §b/rs close§r         - 关闭内网穿透\n"
-                        + " §7⚠ 仅监听 25565 端口"), false);
+                    int myLevel = getPermLevel(ctx.getSource());
+                    StringBuilder sb = new StringBuilder("§6===== §c红石联机 §6=====\n");
+                    sb.append(" §b/rs server list§r  - 列出服务器 §7(等级0)\n");
+                    if (myLevel >= 3) sb.append(" §b/rs server <n>§r   - 选择服务器 §7(等级3)\n");
+                    if (myLevel >= 4) {
+                        sb.append(" §b/rs open [人数]§r - 开启内网穿透 §7(等级4)\n");
+                        sb.append(" §b/rs close§r         - 关闭内网穿透 §7(等级4)\n");
+                        sb.append(" §b/rs op <玩家> <等级>§r - 设置权限 §7(等级4)\n");
+                    }
+                    sb.append(" §7⚠ 仅监听 25565 端口 | 你的等级: " + myLevel);
+                    ctx.getSource().sendSuccess(() -> Component.literal(sb.toString()), false);
                     return 1;
                 })
             );
         } catch (Exception ignored) {}
+    }
+
+    /** 检查玩家是否有指定等级权限 */
+    @Unique
+    private static boolean checkPerm(CommandSourceStack src, int required) {
+        int rl = getPermLevel(src);
+        int vl = getVanillaLevel(src);
+        String name = "CONSOLE";
+        try { ServerPlayer p = src.getPlayer(); if (p != null) name = p.getName().getString(); } catch (Exception ignored) {}
+        RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] {} 执行命令: 原版等级={}, 红石等级={}, 需要等级={}",
+            name, vl, rl, required);
+        if (rl < required) {
+            src.sendFailure(Component.literal("§c权限不足 (需要等级 " + required + ")"));
+            return false;
+        }
+        return true;
+    }
+
+    /** 获取原版权限等级 */
+    @Unique
+    private static int getVanillaLevel(CommandSourceStack src) {
+        try {
+            ServerPlayer player = src.getPlayer();
+            if (player != null) {
+                Method m = ServerPlayer.class.getMethod("getPermissionLevel");
+                return (int) m.invoke(player);
+            }
+        } catch (Exception ignored) {}
+        return 4;
+    }
+
+    /** 执行 /rs open 逻辑 */
+    @Unique
+    private int execOpen(CommandSourceStack src, int maxPlayers) {
+        int port = getLanPort();
+        if (port <= 0) {
+            src.sendFailure(Component.literal("§c未检测到局域网房间 (端口 25565)"));
+            return 0;
+        }
+
+        Server server = RedstoneOnline.servers.get(RedstoneOnline.chooseServer);
+        RedstoneOnline.LOGGER.warn("[RedstoneOnline Debug] /rs open: server={}, addr={}, port={}, maxPlayers={}",
+            server.name, server.address, port, maxPlayers);
+        src.sendSuccess(() ->
+            Component.literal("§a[红石联机]§r正在使用 §e" + server.name + "§r 创建隧道..."), false);
+
+        new Thread(() -> {
+            Frp.start(server.address, port, port, maxPlayers);
+
+            String addr = Frp.getAddress();
+            if (addr != null) {
+                Frp.copyToClipboard(addr);
+                Minecraft.getInstance().execute(() -> {
+                    if (Minecraft.getInstance().player != null) {
+                        Minecraft.getInstance().player.displayClientMessage(
+                            Component.literal("§a✔ 隧道已开启 §7| §c" + addr),
+                            true);
+                        Minecraft.getInstance().player.displayClientMessage(
+                            Component.literal("§c[红石联机]§r地址已复制到剪切板: §a" + addr),
+                            false);
+                    }
+                });
+            }
+        }, "RedstoneOnline-Open").start();
+
+        return 1;
+    }
+
+    /** 获取玩家权限等级 */
+    @Unique
+    private static int getPermLevel(CommandSourceStack src) {
+        try {
+            ServerPlayer player = src.getPlayer();
+            if (player != null) {
+                // 如果通过 /rs op 设置过，用设置的值
+                if (RedstoneOnline.permLevels.containsKey(player.getUUID())) {
+                    return RedstoneOnline.permLevels.get(player.getUUID());
+                }
+                // 默认：原版 OP 或房主（单人中）均为 4 级
+                if (isOp(player)) return 4;
+                return 0;
+            }
+            // 命令方块默认 3 级
+            return 3;
+        } catch (Exception e) {
+            return 4;
+        }
+    }
+
+    /** 检查玩家是否为 OP（兼容各版本） */
+    @Unique
+    private static boolean isOp(ServerPlayer player) {
+        try {
+            Method m = ServerPlayer.class.getMethod("hasPermissions", int.class);
+            return (boolean) m.invoke(player, 4);
+        } catch (Exception ignored) {}
+        try {
+            Method m = ServerPlayer.class.getMethod("canUseGameMasterBlocks");
+            return (boolean) m.invoke(player);
+        } catch (Exception ignored) {}
+        try {
+            // 通过 PlayerList 判断 OP
+            Method getServer = Entity.class.getMethod("getServer");
+            Object ms = getServer.invoke(player);
+            Method getPlayerList = ms.getClass().getMethod("getPlayerList");
+            Object pl = getPlayerList.invoke(ms);
+            return (boolean) pl.getClass().getMethod("isOp", com.mojang.authlib.GameProfile.class)
+                .invoke(pl, player.getGameProfile());
+        } catch (Exception ignored) {}
+        return false;
     }
 
     /** 通过反射获取局域网端口，未开启返回 -1 */

@@ -38,6 +38,9 @@ public class RedstoneOnline /*? if fabric {*/ implements ModInitializer /*?}*/ {
     );
     public static int chooseServer = 0;
 
+    // 权限等级: 0=所有人 2=可选择服务器 4=可开/关隧道/管理
+    public static final java.util.Map<java.util.UUID, Integer> permLevels = new java.util.concurrent.ConcurrentHashMap<>();
+
     private static int commandSelectionResult = -1;
 
     /** 由 /rs 命令回调，设置选择的服务器索引 */
